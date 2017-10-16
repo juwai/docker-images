@@ -47,6 +47,7 @@ RUN adduser vagrant \
     && sudo -u vagrant touch /home/vagrant/.ssh/authorized_keys \
     && chmod 600 /home/vagrant/.ssh/authorized_keys \
     && cat /tmp/insecure_key >> /home/vagrant/.ssh/authorized_keys \
+    && rm /tmp/insecure_key \
     && echo 'vagrant' | passwd --stdin vagrant
 
 # Sudo permission
