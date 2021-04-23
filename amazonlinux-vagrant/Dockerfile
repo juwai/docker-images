@@ -1,19 +1,8 @@
-FROM amazonlinux:2017.03
+FROM amazonlinux:2
 
 # Install required packages
-RUN yum -y install yum-plugin-fastestmirror findutils \
-    && yum clean all \
-    && find /usr/share \
-        -type f \
-        -regextype posix-extended \
-        -regex '.*\.(jpg|png)$' \
-        -delete \
-    && rm -rf /etc/ld.so.cache \
-    && rm -rf /sbin/sln \
-    && rm -rf /usr/{{lib,share}/locale,share/{man,doc,info,cracklib,i18n},{lib,lib64}/gconv,bin/localedef,sbin/build-locale-archive} \
-    && rm -rf /{root,tmp,var/cache/{ldconfig,yum}}/*
-
-RUN yum -y install sudo passwd unzip bzip2 cracklib-dicts python27-setuptools openssh-clients openssh-server \
+RUN yum -y install yum-plugin-fastestmirror \
+    && yum -y install findutils sudo passwd unzip bzip2 tar cracklib-dicts python2-pip openssh-clients openssh-server \
     && yum clean all \
     && find /usr/share \
         -type f \
@@ -26,9 +15,7 @@ RUN yum -y install sudo passwd unzip bzip2 cracklib-dicts python27-setuptools op
     && rm -rf /{root,tmp,var/cache/{ldconfig,yum}}/*
 
 # Install supervisord
-RUN easy_install \
-    'supervisor == 3.3.1' \
-    'supervisor-stdout == 0.1.1'
+RUN pip install supervisor==3.3.1 supervisor-stdout==0.1.1
 ADD files/supervisord.conf /etc/supervisord.conf
 
 # Configure sshd
@@ -59,6 +46,11 @@ RUN sed -i \
 # Add missing file
 RUN echo 'NETWORKING=yes' > /etc/sysconfig/network
 
+# Make Ansible believe we are running systemd
+ADD files/systemctl /usr/bin/systemctl
+RUN chmod 755 /usr/bin/systemctl \
+    && mkdir /run/systemd/system
+
 EXPOSE 22
 
-CMD ["/usr/local/bin/supervisord", "--configuration=/etc/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
