@@ -2,7 +2,18 @@ FROM amazonlinux:2
 
 # Install required packages
 RUN yum -y install yum-plugin-fastestmirror \
-    && yum -y install findutils sudo passwd unzip bzip2 tar cracklib-dicts python2-pip openssh-clients openssh-server \
+    && yum -y install \
+        findutils \
+        sudo \
+        passwd \
+        unzip \
+        bzip2 \
+        tar \
+        cracklib-dicts \
+        python2-pip \
+        openssh-clients \
+        openssh-server \
+        yum-plugin-post-transaction-actions \
     && yum clean all \
     && find /usr/share \
         -type f \
@@ -46,9 +57,11 @@ RUN sed -i \
 # Add missing file
 RUN echo 'NETWORKING=yes' > /etc/sysconfig/network
 
-# Make Ansible believe we are running systemd
+# Create dummy systemctl and make Ansible believe we are using systemd
 ADD files/systemctl /usr/bin/systemctl
-RUN chmod 755 /usr/bin/systemctl \
+ADD files/systemctl /usr/bin/systemctl.docker
+RUN chmod 755 /usr/bin/systemctl /usr/bin/systemctl.docker \
+    && echo 'systemd:update:cp /usr/bin/systemctl.docker /usr/bin/systemctl' > /etc/yum/post-actions/post.action \
     && mkdir /run/systemd/system
 
 EXPOSE 22
