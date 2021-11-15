@@ -64,6 +64,13 @@ RUN chmod 755 /usr/bin/systemctl /usr/bin/systemctl.docker \
     && echo 'systemd:update:cp /usr/bin/systemctl.docker /usr/bin/systemctl' > /etc/yum/post-actions/post.action \
     && mkdir /run/systemd/system
 
+# Forward ssh agent when using sudo
+RUN echo 'Defaults env_keep+=SSH_AUTH_SOCK' > /etc/sudoers.d/ssh_auth_sock \
+    && chmod 440 /etc/sudoers.d/ssh_auth_sock
+
+# Disable host key checking for github.com
+ADD files/ssh-config /root/.ssh/config
+
 EXPOSE 22
 
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
