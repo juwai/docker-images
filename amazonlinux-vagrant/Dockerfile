@@ -1,3 +1,30 @@
+# Intermediate image for building
+FROM amazonlinux:2 as intermediate
+
+# Install dependencies for Python
+RUN yum -y install yum-plugin-fastestmirror \
+    && yum -y install \
+        gcc \
+        git \
+        make \
+        openssl-devel \
+        tar \
+        zlib-devel
+
+# Build Python
+RUN curl -O https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tgz \
+    && tar xzvf Python-3.6.15.tgz \
+    && cd Python-3.6.15 \
+    && ./configure \
+    && make install \
+    && rm -rf /usr/local/lib/python3.6/config-3.6m-x86_64-linux-gnu \
+    && rm -rf /usr/local/lib/python3.6/test \
+    && rm -rf /usr/local/lib/libpython3.6m.a
+
+# Install supervisord
+RUN pip3 install supervisor==4.1.0 git+https://github.com/coderanger/supervisor-stdout.git@973ba19
+
+
 FROM amazonlinux:2
 
 # Install required packages
@@ -10,9 +37,9 @@ RUN yum -y install yum-plugin-fastestmirror \
         bzip2 \
         tar \
         cracklib-dicts \
-        python2-pip \
         openssh-clients \
         openssh-server \
+        python2-pip \
         yum-plugin-post-transaction-actions \
     && yum clean all \
     && find /usr/share \
@@ -25,8 +52,7 @@ RUN yum -y install yum-plugin-fastestmirror \
     && rm -rf /usr/{{lib,share}/locale,share/{man,doc,info,cracklib,i18n},{lib,lib64}/gconv,bin/localedef,sbin/build-locale-archive} \
     && rm -rf /{root,tmp,var/cache/{ldconfig,yum}}/*
 
-# Install supervisord
-RUN pip install supervisor==3.3.1 supervisor-stdout==0.1.1
+# Add supervisord config
 ADD files/supervisord.conf /etc/supervisord.conf
 
 # Configure sshd
@@ -71,6 +97,9 @@ RUN echo 'Defaults env_keep+=SSH_AUTH_SOCK' > /etc/sudoers.d/ssh_auth_sock \
 # Disable host key checking for github.com
 ADD files/ssh-config /root/.ssh/config
 
+# Copy Python from intermediate image
+COPY --from=intermediate /usr/local /usr/local
+
 EXPOSE 22
 
-CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
+CMD ["/usr/local/bin/supervisord", "--configuration=/etc/supervisord.conf"]
