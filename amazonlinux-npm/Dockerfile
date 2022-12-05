@@ -18,6 +18,7 @@ FROM amazonlinux:2
 RUN yum -y install yum-plugin-fastestmirror \
     && yum -y install \
         git \
+        gcc-c++ \
     && yum clean all \
     && find /usr/share \
         -type f \
